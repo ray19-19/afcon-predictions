@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-<parameter name="db" > from '@/lib/db';
+import { db } from '@/lib/db';
 import { requireAdmin, getCurrentUser } from '@/lib/auth';
 import { MatchWithPrediction } from '@/types';
 
