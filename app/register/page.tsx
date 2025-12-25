@@ -45,8 +45,7 @@ export default function RegisterPage() {
                 });
 
                 if (loginRes.ok) {
-                    router.push('/');
-                    router.refresh();
+                    window.location.href = '/';
                 } else {
                     router.push('/login');
                 }
