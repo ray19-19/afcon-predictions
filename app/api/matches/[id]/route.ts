@@ -17,7 +17,7 @@ export async function PUT(
       UPDATE matches
       SET 
         home_team = COALESCE(${home_team}, home_team),
-        away_team = COALESCE(${away_away}, away_team),
+        away_team = COALESCE(${away_team}, away_team),
         competition = COALESCE(${competition}, competition),
         venue = COALESCE(${venue}, venue),
         match_date = COALESCE(${match_date}, match_date),
