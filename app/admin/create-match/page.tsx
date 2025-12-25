@@ -25,10 +25,15 @@ export default function AdminCreateMatchPage() {
         setLoading(true);
 
         try {
+            const payload = {
+                ...formData,
+                kickoff_time: new Date(formData.kickoff_time).toISOString(),
+            };
+
             const res = await fetch('/api/matches', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
 
             const data = await res.json();
