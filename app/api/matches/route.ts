@@ -13,36 +13,89 @@ export async function GET(request: NextRequest) {
         const user = getCurrentUser(request);
         const userId = user?.userId;
 
-        let query;
+        let result;
 
         if (userId) {
             // If logged in, include user's predictions
-            query = db`
-        SELECT 
-          m.*,
-          p.id as prediction_id,
-          p.predicted_home_score,
-          p.predicted_away_score,
-          p.points
-        FROM matches m
-        LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = ${userId}
-        WHERE 1=1
-        ${status ? db`AND m.status = ${status}` : db``}
-        ${competition ? db`AND m.competition = ${competition}` : db``}
-        ORDER BY m.kickoff_time ASC
-      `;
+            if (status && competition) {
+                result = await db`
+          SELECT 
+            m.*,
+            p.id as prediction_id,
+            p.predicted_home_score,
+            p.predicted_away_score,
+            p.points
+          FROM matches m
+          LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = ${userId}
+          WHERE m.status = ${status} AND m.competition = ${competition}
+          ORDER BY m.kickoff_time ASC
+        `;
+            } else if (status) {
+                result = await db`
+          SELECT 
+            m.*,
+            p.id as prediction_id,
+            p.predicted_home_score,
+            p.predicted_away_score,
+            p.points
+          FROM matches m
+          LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = ${userId}
+          WHERE m.status = ${status}
+          ORDER BY m.kickoff_time ASC
+        `;
+            } else if (competition) {
+                result = await db`
+          SELECT 
+            m.*,
+            p.id as prediction_id,
+            p.predicted_home_score,
+            p.predicted_away_score,
+            p.points
+          FROM matches m
+          LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = ${userId}
+          WHERE m.competition = ${competition}
+          ORDER BY m.kickoff_time ASC
+        `;
+            } else {
+                result = await db`
+          SELECT 
+            m.*,
+            p.id as prediction_id,
+            p.predicted_home_score,
+            p.predicted_away_score,
+            p.points
+          FROM matches m
+          LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = ${userId}
+          ORDER BY m.kickoff_time ASC
+        `;
+            }
         } else {
             // If not logged in, just get matches
-            query = db`
-        SELECT * FROM matches
-        WHERE 1=1
-        ${status ? db`AND status = ${status}` : db``}
-        ${competition ? db`AND competition = ${competition}` : db``}
-        ORDER BY kickoff_time ASC
-      `;
+            if (status && competition) {
+                result = await db`
+          SELECT * FROM matches
+          WHERE status = ${status} AND competition = ${competition}
+          ORDER BY kickoff_time ASC
+        `;
+            } else if (status) {
+                result = await db`
+          SELECT * FROM matches
+          WHERE status = ${status}
+          ORDER BY kickoff_time ASC
+        `;
+            } else if (competition) {
+                result = await db`
+          SELECT * FROM matches
+          WHERE competition = ${competition}
+          ORDER BY kickoff_time ASC
+        `;
+            } else {
+                result = await db`
+          SELECT * FROM matches
+          ORDER BY kickoff_time ASC
+        `;
+            }
         }
-
-        const result = await query;
 
         const matches: MatchWithPrediction[] = result.rows.map((row: any) => ({
             id: row.id,
