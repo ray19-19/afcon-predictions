@@ -21,7 +21,7 @@ export function generateToken(user: { id: number; username: string; is_admin: bo
             isAdmin: user.is_admin,
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
+        { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
     );
 }
 
