@@ -1,7 +1,7 @@
 'use client';
 
 import { MatchWithPrediction } from '@/types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface MatchCardProps {
     match: MatchWithPrediction;
@@ -15,9 +15,17 @@ export default function MatchCard({ match, onPredictionSubmit, isLoggedIn }: Mat
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const kickoffTime = new Date(match.kickoff_time);
-    const now = new Date();
+    const [now, setNow] = useState(new Date());
     const hasStarted = now >= kickoffTime;
     const isFinished = match.status === 'FINISHED';
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setNow(new Date());
+        }, 60000); // Update every minute
+
+        return () => clearInterval(timer);
+    }, []);
 
     const handleSubmit = async () => {
         if (!onPredictionSubmit) return;
@@ -38,8 +46,8 @@ export default function MatchCard({ match, onPredictionSubmit, isLoggedIn }: Mat
                     {match.competition}
                 </span>
                 <span className={`text-xs font-semibold px-3 py-1 rounded-full ${isFinished ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                        hasStarted ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                    hasStarted ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                     }`}>
                     {match.status}
                 </span>
@@ -147,9 +155,9 @@ export default function MatchCard({ match, onPredictionSubmit, isLoggedIn }: Mat
                             </span>
                         </div>
                         <div className={`font-bold text-lg ${match.user_prediction.points === 5 ? 'text-green-600' :
-                                match.user_prediction.points === 3 ? 'text-blue-600' :
-                                    match.user_prediction.points === 1 ? 'text-yellow-600' :
-                                        'text-gray-500'
+                            match.user_prediction.points === 3 ? 'text-blue-600' :
+                                match.user_prediction.points === 1 ? 'text-yellow-600' :
+                                    'text-gray-500'
                             }`}>
                             +{match.user_prediction.points} pts
                         </div>
