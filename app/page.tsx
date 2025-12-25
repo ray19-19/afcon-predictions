@@ -1,65 +1,160 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useEffect, useState } from 'react';
+import MatchCard from '@/components/MatchCard';
+import { MatchWithPrediction } from '@/types';
+
+export default function HomePage() {
+  const [matches, setMatches] = useState<MatchWithPrediction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [filter, setFilter] = useState<string>('all');
+
+  useEffect(() => {
+    checkAuth();
+    fetchMatches();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      setIsLoggedIn(res.ok);
+    } catch (error) {
+      setIsLoggedIn(false);
+    }
+  };
+
+  const fetchMatches = async () => {
+    try {
+      const res = await fetch('/api/matches');
+      const data = await res.json();
+      setMatches(data.matches || []);
+    } catch (error) {
+      console.error('Failed to fetch matches:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePredictionSubmit = async (matchId: number, homeScore: number, awayScore: number) => {
+    try {
+      const res = await fetch('/api/predictions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          match_id: matchId,
+          predicted_home_score: homeScore,
+          predicted_away_score: awayScore,
+        }),
+      });
+
+      if (res.ok) {
+        // Refresh matches to update prediction
+        fetchMatches();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to submit prediction');
+      }
+    } catch (error) {
+      alert('Failed to submit prediction');
+    }
+  };
+
+  const filteredMatches = matches.filter(match => {
+    if (filter === 'scheduled') return match.status === 'SCHEDULED';
+    if (filter === 'finished') return match.status === 'FINISHED';
+    return true;
+  });
+
+  const groupedMatches = filteredMatches.reduce((groups, match) => {
+    const date = new Date(match.match_date).toLocaleDateString();
+    if (!groups[date]) groups[date] = [];
+    groups[date].push(match);
+    return groups;
+  }, {} as Record<string, MatchWithPrediction[]>);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Loading matches...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold mb-2">AFCON 2025 Matches</h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Predict match scores and compete with your friends!
+        </p>
+      </div>
+
+      {/* Filter Buttons */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-4 py-2 rounded-lg font-semibold ${filter === 'all'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+        >
+          All Matches
+        </button>
+        <button
+          onClick={() => setFilter('scheduled')}
+          className={`px-4 py-2 rounded-lg font-semibold ${filter === 'scheduled'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+        >
+          Upcoming
+        </button>
+        <button
+          onClick={() => setFilter('finished')}
+          className={`px-4 py-2 rounded-lg font-semibold ${filter === 'finished'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+        >
+          Results
+        </button>
+      </div>
+
+      {/* Matches by Date */}
+      {Object.keys(groupedMatches).length === 0 ? (
+        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+          <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">
+            No matches yet. Check back soon!
           </p>
+          {!isLoggedIn && (
+            <a href="/register" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">
+              Register to Make Predictions
+            </a>
+          )}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      ) : (
+        <div className="space-y-8">
+          {Object.entries(groupedMatches).map(([date, dateMatches]) => (
+            <div key={date}>
+              <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">{date}</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {dateMatches.map(match => (
+                  <MatchCard
+                    key={match.id}
+                    match={match}
+                    onPredictionSubmit={handlePredictionSubmit}
+                    isLoggedIn={isLoggedIn}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
-      </main>
+      )}
     </div>
   );
 }
