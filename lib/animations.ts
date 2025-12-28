@@ -39,12 +39,12 @@ export const buttonTap = {
     scale: 0.95
 };
 
-// Hover lift animation
+// Hover lift animation - fixed for Framer Motion types
 export const hoverLift = {
     y: -4,
     transition: {
         duration: 0.2,
-        ease: 'easeOut'
+        ease: [0.4, 0, 0.2, 1] as const // cubic-bezier easeOut
     }
 };
 
@@ -69,12 +69,12 @@ export const animateNumber = (from: number, to: number, duration: number = 1000)
 
 // Transition configs
 export const springTransition = {
-    type: 'spring',
+    type: 'spring' as const,
     stiffness: 300,
     damping: 30
 };
 
 export const smoothTransition = {
     duration: 0.3,
-    ease: [0.4, 0, 0.2, 1] // Tailwind's ease-in-out
+    ease: [0.4, 0, 0.2, 1] as const // Tailwind's ease-in-out cubic-bezier
 };
