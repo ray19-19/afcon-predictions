@@ -262,10 +262,11 @@ export default function MatchCard({ match, onPredictionSubmit, isLoggedIn }: Mat
                             )}
                         </motion.div>
                     ) : (
-                        <div className="flex items-center justify-center gap-3">
-                            <div className="flex items-center gap-2">
-                                <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                                    {match.home_team}
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                            {/* Home Team Input */}
+                            <div className="flex items-center gap-2 flex-1 justify-center sm:justify-start">
+                                <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[60px] text-right sm:text-left">
+                                    {match.home_team}:
                                 </label>
                                 <input
                                     type="number"
@@ -274,14 +275,16 @@ export default function MatchCard({ match, onPredictionSubmit, isLoggedIn }: Mat
                                     value={homeScore}
                                     onChange={(e) => setHomeScore(parseInt(e.target.value) || 0)}
                                     onFocus={handleInputFocus}
-                                    className="w-14 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-center font-bold text-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                                    className="w-16 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-center font-bold text-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                                     disabled={isSubmitting}
                                 />
                             </div>
 
-                            <span className="font-black text-2xl text-gray-400">-</span>
+                            {/* Divider - Hidden on mobile, shown on desktop */}
+                            <span className="hidden sm:block font-black text-2xl text-gray-400 mx-2">-</span>
 
-                            <div className="flex items-center gap-2">
+                            {/* Away Team Input */}
+                            <div className="flex items-center gap-2 flex-1 justify-center sm:justify-start">
                                 <input
                                     type="number"
                                     min="0"
@@ -289,19 +292,20 @@ export default function MatchCard({ match, onPredictionSubmit, isLoggedIn }: Mat
                                     value={awayScore}
                                     onChange={(e) => setAwayScore(parseInt(e.target.value) || 0)}
                                     onFocus={handleInputFocus}
-                                    className="w-14 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-center font-bold text-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                                    className="w-16 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-center font-bold text-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all order-2 sm:order-1"
                                     disabled={isSubmitting}
                                 />
-                                <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                                    {match.away_team}
+                                <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[60px] text-left order-1 sm:order-2">
+                                    :{match.away_team}
                                 </label>
                             </div>
 
+                            {/* Submit Button - Full width on mobile */}
                             <motion.button
                                 whileTap={buttonTap}
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}
-                                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-bold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5"
+                                className="w-full sm:w-auto px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-bold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5 mt-2 sm:mt-0"
                             >
                                 {isSubmitting ? '💾' : match.user_prediction ? '↻ Update' : '✓ Submit'}
                             </motion.button>
