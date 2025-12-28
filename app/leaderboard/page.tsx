@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import LeaderboardTable from '@/components/LeaderboardTable';
 import { LeaderboardEntry } from '@/types';
+import { motion } from 'framer-motion';
+import { fadeInUp } from '@/lib/animations';
 
 export default function LeaderboardPage() {
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -41,46 +43,94 @@ export default function LeaderboardPage() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p>Loading leaderboard...</p>
-                </div>
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center"
+                >
+                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        Loading leaderboard...
+                    </p>
+                </motion.div>
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="mb-8">
-                <h1 className="text-4xl font-bold mb-2">🏆 Leaderboard</h1>
-                <p className="text-gray-600 dark:text-gray-400">
+        <div className="container mx-auto px-4 py-12">
+            {/* Hero Section */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center mb-12"
+            >
+                <h1 className="text-5xl md:text-6xl font-black mb-4 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 bg-clip-text text-transparent">
+                    🏆 Leaderboard
+                </h1>
+                <p className="text-xl text-gray-600 dark:text-gray-400 font-semibold">
                     See who's leading the prediction league!
                 </p>
-            </div>
+            </motion.div>
 
             <LeaderboardTable leaderboard={leaderboard} currentUserId={currentUserId} />
 
-            <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-                <h2 className="font-bold text-lg mb-3">Scoring System</h2>
-                <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                        <span className="font-bold text-green-600 dark:text-green-400">5 points</span>
-                        <span>→ Exact score prediction</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                        <span className="font-bold text-blue-600 dark:text-blue-400">3 points</span>
-                        <span>→ Correct winner + goal difference</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                        <span className="font-bold text-yellow-600 dark:text-yellow-400">1 point</span>
-                        <span>→ Correct winner only</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                        <span className="font-bold text-gray-500">0 points</span>
-                        <span>→ Incorrect prediction</span>
-                    </li>
-                </ul>
-            </div>
+            {/* Scoring System Info */}
+            <motion.div
+                variants={fadeInUp}
+                initial="initial"
+                animate="animate"
+                className="mt-12 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 border-2 border-blue-200 dark:border-blue-800 rounded-2xl p-8 shadow-xl"
+            >
+                <h2 className="font-black text-2xl mb-6 flex items-center gap-2">
+                    <span className="text-2xl">📊</span>
+                    Scoring System
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <ScoreCard
+                        points={5}
+                        label="Exact Score"
+                        color="from-green-500 to-emerald-600"
+                        emoji="🎯"
+                    />
+                    <ScoreCard
+                        points={3}
+                        label="Winner + Goal Diff"
+                        color="from-blue-500 to-indigo-600"
+                        emoji="🎲"
+                    />
+                    <ScoreCard
+                        points={1}
+                        label="Winner Only"
+                        color="from-yellow-500 to-orange-600"
+                        emoji="👍"
+                    />
+                    <ScoreCard points={0} label="Incorrect" color="from-gray-400 to-gray-600" emoji="😅" />
+                </div>
+            </motion.div>
         </div>
+    );
+}
+
+function ScoreCard({
+    points,
+    label,
+    color,
+    emoji,
+}: {
+    points: number;
+    label: string;
+    color: string;
+    emoji: string;
+}) {
+    return (
+        <motion.div
+            whileHover={{ scale: 1.05, y: -5 }}
+            className={`bg-gradient-to-br ${color} text-white p-6 rounded-xl shadow-lg`}
+        >
+            <div className="text-4xl mb-2">{emoji}</div>
+            <div className="text-4xl font-black mb-1">{points}</div>
+            <div className="text-sm font-semibold opacity-90">{label}</div>
+        </motion.div>
     );
 }
