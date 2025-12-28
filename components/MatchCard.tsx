@@ -9,10 +9,21 @@ interface MatchCardProps {
     isLoggedIn: boolean;
 }
 
+interface MatchPrediction {
+    id: number;
+    username: string;
+    predicted_home_score: number;
+    predicted_away_score: number;
+    points: number | null;
+}
+
 export default function MatchCard({ match, onPredictionSubmit, isLoggedIn }: MatchCardProps) {
     const [homeScore, setHomeScore] = useState(match.user_prediction?.predicted_home_score ?? 0);
     const [awayScore, setAwayScore] = useState(match.user_prediction?.predicted_away_score ?? 0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPredictions, setShowPredictions] = useState(false);
+    const [allPredictions, setAllPredictions] = useState<MatchPrediction[]>([]);
+    const [loadingPredictions, setLoadingPredictions] = useState(false);
 
     const kickoffTime = new Date(match.kickoff_time);
     const [now, setNow] = useState(new Date());
@@ -35,6 +46,31 @@ export default function MatchCard({ match, onPredictionSubmit, isLoggedIn }: Mat
             await onPredictionSubmit(match.id, homeScore, awayScore);
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+        e.target.select(); // Select all text on focus - fixes the "0" typing issue
+    };
+
+    const fetchAllPredictions = async () => {
+        if (allPredictions.length > 0) {
+            setShowPredictions(!showPredictions);
+            return;
+        }
+
+        setLoadingPredictions(true);
+        try {
+            const res = await fetch(`/api/matches/${match.id}/predictions`);
+            if (res.ok) {
+                const data = await res.json();
+                setAllPredictions(data.predictions);
+                setShowPredictions(true);
+            }
+        } catch (error) {
+            console.error('Failed to fetch predictions:', error);
+        } finally {
+            setLoadingPredictions(false);
         }
     };
 
@@ -112,6 +148,7 @@ export default function MatchCard({ match, onPredictionSubmit, isLoggedIn }: Mat
                                     max="20"
                                     value={homeScore}
                                     onChange={(e) => setHomeScore(parseInt(e.target.value) || 0)}
+                                    onFocus={handleInputFocus}
                                     className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-center"
                                     disabled={isSubmitting}
                                 />
@@ -126,6 +163,7 @@ export default function MatchCard({ match, onPredictionSubmit, isLoggedIn }: Mat
                                     max="20"
                                     value={awayScore}
                                     onChange={(e) => setAwayScore(parseInt(e.target.value) || 0)}
+                                    onFocus={handleInputFocus}
                                     className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-center"
                                     disabled={isSubmitting}
                                 />
@@ -162,6 +200,52 @@ export default function MatchCard({ match, onPredictionSubmit, isLoggedIn }: Mat
                             +{match.user_prediction.points} pts
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* View All Predictions (after match starts) */}
+            {hasStarted && (
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                    <button
+                        onClick={fetchAllPredictions}
+                        disabled={loadingPredictions}
+                        className="w-full py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded font-semibold text-sm transition-colors disabled:opacity-50"
+                    >
+                        {loadingPredictions ? 'Loading...' : showPredictions ? 'Hide All Predictions' : 'View All Predictions'}
+                    </button>
+
+                    {showPredictions && allPredictions.length > 0 && (
+                        <div className="mt-4 space-y-2 max-h-64 overflow-y-auto">
+                            {allPredictions.map((pred) => (
+                                <div
+                                    key={pred.id}
+                                    className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded"
+                                >
+                                    <span className="font-semibold text-sm">{pred.username}</span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-mono">
+                                            {pred.predicted_home_score} - {pred.predicted_away_score}
+                                        </span>
+                                        {isFinished && pred.points !== null && (
+                                            <span className={`font-bold text-sm px-2 py-1 rounded ${pred.points === 5 ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200' :
+                                                    pred.points === 3 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200' :
+                                                        pred.points === 1 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200' :
+                                                            'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                                }`}>
+                                                +{pred.points}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {showPredictions && allPredictions.length === 0 && (
+                        <div className="mt-4 text-center text-gray-500 dark:text-gray-400 text-sm py-4">
+                            No predictions yet for this match
+                        </div>
+                    )}
                 </div>
             )}
         </div>
