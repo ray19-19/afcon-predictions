@@ -68,7 +68,24 @@ export default function HomePage() {
     return true;
   });
 
-  const groupedMatches = filteredMatches.reduce((groups, match) => {
+  // Sort matches: Open predictions first (scheduled & not started), then by kickoff time
+  const sortedMatches = filteredMatches.sort((a, b) => {
+    const aKickoff = new Date(a.kickoff_time);
+    const bKickoff = new Date(b.kickoff_time);
+    const now = new Date();
+
+    const aIsOpen = a.status === 'SCHEDULED' && aKickoff > now;
+    const bIsOpen = b.status === 'SCHEDULED' && bKickoff > now;
+
+    // Prioritize open predictions
+    if (aIsOpen && !bIsOpen) return -1;
+    if (!aIsOpen && bIsOpen) return 1;
+
+    // Then sort by kickoff time
+    return aKickoff.getTime() - bKickoff.getTime();
+  });
+
+  const groupedMatches = sortedMatches.reduce((groups, match) => {
     const date = new Date(match.match_date).toLocaleDateString();
     if (!groups[date]) groups[date] = [];
     groups[date].push(match);
@@ -213,8 +230,8 @@ function FilterButton({
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
       className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-md ${active
-          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/50'
-          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-700'
+        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/50'
+        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-700'
         }`}
     >
       {icon}
