@@ -13,6 +13,24 @@ export async function PUT(
 
         const { home_team, away_team, competition, venue, match_date, kickoff_time, status } = await request.json();
 
+        // SECURITY: Prevent changing status to FINISHED through this endpoint
+        // Scores must be submitted through /api/matches/[id]/score
+        if (status === 'FINISHED') {
+            return NextResponse.json(
+                { error: 'Cannot set status to FINISHED through this endpoint. Use /api/matches/[id]/score instead.' },
+                { status: 400 }
+            );
+        }
+
+        // SECURITY: Validate status values
+        const validStatuses = ['SCHEDULED', 'LIVE', 'POSTPONED', 'CANCELLED'];
+        if (status && !validStatuses.includes(status)) {
+            return NextResponse.json(
+                { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
+                { status: 400 }
+            );
+        }
+
         const result = await db`
       UPDATE matches
       SET 
@@ -58,7 +76,7 @@ export async function DELETE(
         requireAdmin(request);
         const { id } = await params;
 
-        // Check if match has predictions
+        // SECURITY: Check if match has predictions before deleting
         const predictions = await db`
       SELECT COUNT(*) as count FROM predictions WHERE match_id = ${id}
     `;

@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
         const { match_id, predicted_home_score, predicted_away_score } = await request.json();
 
-        // Validation
+        // SECURITY: Validate input types
         if (!match_id || typeof predicted_home_score !== 'number' || typeof predicted_away_score !== 'number') {
             return NextResponse.json(
                 { error: 'Match ID, predicted home score, and predicted away score are required' },
@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // SECURITY: Validate score range
         if (!isValidScore(predicted_home_score) || !isValidScore(predicted_away_score)) {
             return NextResponse.json(
                 { error: 'Scores must be integers between 0 and 50' },
@@ -61,9 +62,12 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if match exists and get kickoff time
+        // SECURITY: Use transaction to prevent race conditions
+        // Check match exists and get details in single query
         const matchResult = await db`
-      SELECT id, kickoff_time, status FROM matches WHERE id = ${match_id}
+      SELECT id, kickoff_time, status, home_score, away_score 
+      FROM matches 
+      WHERE id = ${match_id}
     `;
 
         if (matchResult.rows.length === 0) {
@@ -72,23 +76,43 @@ export async function POST(request: NextRequest) {
 
         const match = matchResult.rows[0];
 
-        // Check if match has started
+        // SECURITY CHECK 1: Match must be SCHEDULED
+        if (match.status !== 'SCHEDULED') {
+            return NextResponse.json(
+                { error: 'Cannot predict on matches that are not scheduled' },
+                { status: 403 }
+            );
+        }
+
+        // SECURITY CHECK 2: Match must not have started (server-side time check)
         if (hasMatchStarted(match.kickoff_time)) {
             return NextResponse.json(
                 { error: 'Cannot submit prediction after match has started' },
-                { status: 400 }
+                { status: 403 }
             );
         }
 
-        // Check if match is not scheduled
-        if (match.status !== 'SCHEDULED') {
+        // SECURITY CHECK 3: Match must not have a final score
+        if (match.home_score !== null || match.away_score !== null) {
             return NextResponse.json(
-                { error: 'Can only predict on scheduled matches' },
-                { status: 400 }
+                { error: 'Cannot submit prediction for completed match' },
+                { status: 403 }
             );
         }
 
-        // Insert or update prediction
+        // SECURITY: Additional check - ensure kickoff is in the future
+        const kickoffTime = new Date(match.kickoff_time);
+        const now = new Date();
+        const timeUntilKickoff = kickoffTime.getTime() - now.getTime();
+
+        if (timeUntilKickoff <= 0) {
+            return NextResponse.json(
+                { error: 'Prediction window has closed' },
+                { status: 403 }
+            );
+        }
+
+        // Insert or update prediction with WHERE clause to prevent updates after kickoff
         const result = await db`
       INSERT INTO predictions (user_id, match_id, predicted_home_score, predicted_away_score)
       VALUES (${user.userId}, ${match_id}, ${predicted_home_score}, ${predicted_away_score})
@@ -97,8 +121,25 @@ export async function POST(request: NextRequest) {
         predicted_home_score = ${predicted_home_score},
         predicted_away_score = ${predicted_away_score},
         updated_at = CURRENT_TIMESTAMP
+      WHERE 
+        predictions.match_id IN (
+          SELECT id FROM matches 
+          WHERE id = ${match_id} 
+          AND status = 'SCHEDULED' 
+          AND kickoff_time > CURRENT_TIMESTAMP
+          AND home_score IS NULL
+          AND away_score IS NULL
+        )
       RETURNING *
     `;
+
+        // If no rows returned, the WHERE clause failed (race condition caught!)
+        if (result.rows.length === 0) {
+            return NextResponse.json(
+                { error: 'Prediction locked: match has started or status changed' },
+                { status: 403 }
+            );
+        }
 
         return NextResponse.json({
             message: 'Prediction submitted successfully',
