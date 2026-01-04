@@ -103,6 +103,13 @@ export default function AdminDashboard() {
                     href="/admin/scores"
                     color="green"
                 />
+                <ActionCard
+                    title="Manage Users"
+                    description="View users and reset passwords"
+                    icon="👥"
+                    href="/admin/users"
+                    color="purple"
+                />
             </div>
         </div>
     );
@@ -133,6 +140,7 @@ function ActionCard({ title, description, icon, href, color }: { title: string; 
     const colorClasses = {
         blue: 'bg-blue-600 hover:bg-blue-700',
         green: 'bg-green-600 hover:bg-green-700',
+        purple: 'bg-purple-600 hover:bg-purple-700',
     };
 
     return (
