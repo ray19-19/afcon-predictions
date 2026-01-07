@@ -24,8 +24,8 @@ export default function RootLayout({
         <footer className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 py-8 mt-16">
           <div className="container mx-auto px-4 text-center text-white">
             <p className="font-bold text-lg">⚽ AFCON 2025 Predictions</p>
-            <p className="text-sm opacity-90 mt-2">Predict. Compete. Win.</p>
-            <p className="text-xs opacity-75 mt-3">© {new Date().getFullYear()} • Made with ❤️ for football fans</p>
+            <p className="text-sm opacity-90 mt-2">Predict. Compete. and be the arabesque king.</p>
+            <p className="text-xs opacity-75 mt-3">© {new Date().getFullYear()} • Made with ❤️ for arabesque friends</p>
           </div>
         </footer>
       </body>
